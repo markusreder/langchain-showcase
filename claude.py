@@ -21,9 +21,14 @@ class TextKnowledgeBaseApp:
             max_tokens=1024
         )
         
+        # by using init_chat_model, we could also write a model chooser here that initiializes like this: 
+        # claude_opus = init_chat_model("claude-3-opus-20240229", model_provider="anthropic", temperature=0)
+        # gpt_4o = init_chat_model("gpt-4o", model_provider="openai", temperature=0)
+        # langchain itself handels the calls to the specified model
+        
         # Initialize local embeddings using sentence-transformers
         self.embeddings = HuggingFaceEmbeddings(
-            model_name="all-MiniLM-L6-v2",
+            model_name="all-MiniLM-L6-v2", # this is where we can define different embedding models to be used
             model_kwargs={'device': 'cpu'}
             # model_kwargs={'device': 'cuda'} --> use this line instead if gpu is available and torch was compiled with cuda
         )
