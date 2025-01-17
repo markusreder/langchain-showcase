@@ -4,9 +4,11 @@ from langchain_anthropic import ChatAnthropic
 from langchain_community.vectorstores import Chroma
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
 from langchain_community.document_loaders.text import TextLoader
+from langchain_core.runnables import RunnableParallel, RunnablePassthrough
+from langchain.prompts.chat import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 
 # load api key from environment file
 load_dotenv()
@@ -73,23 +75,53 @@ class TextKnowledgeBaseApp:
             embedding=self.embeddings
         )
         
-        # Initialize the conversation chain
-        self.chain = ConversationalRetrievalChain.from_llm(
-            llm=self.llm,
-            retriever=self.vector_store.as_retriever(),
-            memory=self.memory,
-            return_source_documents=True
+        # ConversationRetrievalChain is depracated
+        retriever = self.vector_store.as_retriever(
+            search_kwargs={
+                "k": 3 # adjust this number to send more or less relevant chunks with the prompt
+            }
         )
+        
+        # template
+        template = """
+        Du bist ein LiteraturBot. Deine Anwendung besteht in der Zusammenfassung und im Vergleich von verschiedenen literarischen Werken
+        Versuche, die die Frage mit dem Kontext zu beantworten. Gelingt dies nicht, teile das mit. Versuche nur dann, dein Wissen anzuwenden, wenn im Kontext nichts relevantes vorkommt.
+        
+        {context}
+        
+        Fragte: {question}
+        Antwort: """
+        
+        prompt = ChatPromptTemplate.from_template(template)
+        
+        # Create retrieval chain
+        self.retrieval_chain = (
+            {"context": retriever, "question": RunnablePassthrough()}
+            | prompt
+            | self.llm
+            | StrOutputParser()
+        )
+        
+        # Create parallel chain
+        self.retrieval_chain_with_sources = RunnableParallel(
+            answer = self.retrieval_chain,
+            sources = retriever
+        )
+        
         
     def ask_question(self, question: str) -> str:
         """Ask a question and get a response based on the PDF knowledge base"""
-        if not self.vector_store:
-            return "Please load PDF documents first using load_pdfs()"
+        if not self.retrieval_chain_with_sources:
+            return "Please load PDF documents first using load_text_files()"
         
-        # Get response from the chain
-        response = self.chain({"question": question})
+        try:
+            # Get response from the chain
+            response = self.retrieval_chain_with_sources.invoke(question)
+            
+            return response["answer"]
+        except Exception as e:
+            return f"Error: {e}"
         
-        return response["answer"]
 
 # Example usage
 def main():
