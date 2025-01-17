@@ -14,3 +14,12 @@ The used source files are as follows:
 - Thoams Mann: Der Tod in Venedig
 
 All the results and progress is stored in the prompts_and_answerts.txt file
+
+
+# Open Todos
+- [ ] Mehr literarische Werke ergänzen
+- [ ] Modellauswahl für User erlauben (OpenAI, Claude, etc..) 
+- [ ] Verschiedene Embedding Algorithmen testen
+- [ ] Model Performance berechnen und tracken
+- [ ] Prompt Engineering optimieren beziehungsweise Self-Learning Framework umsetzen
+- [ ] Self-Learning RAG-Framework umsetzen
