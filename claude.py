@@ -32,7 +32,6 @@ class TextKnowledgeBaseApp:
         self.embeddings = HuggingFaceEmbeddings(
             model_name="all-MiniLM-L6-v2", # this is where we can define different embedding models to be used
             model_kwargs={'device': 'cpu'}
-            # model_kwargs={'device': 'cuda'} --> use this line instead if gpu is available and torch was compiled with cuda
         )
         
         # Initialize conversation memory
@@ -75,21 +74,27 @@ class TextKnowledgeBaseApp:
             embedding=self.embeddings
         )
         
-        # ConversationRetrievalChain is depracated
+        # this is where we retrieve the relevant content from the vector store
         retriever = self.vector_store.as_retriever(
             search_kwargs={
-                "k": 3 # adjust this number to send more or less relevant chunks with the prompt
+                "k": 3 #
             }
         )
+        # if we define multiple retrievers, we can use them in a parallel chain
+        # or have them vote on the most relevant content (comnparable to a ensemble model)
         
         # template
         template = """
         Du bist ein LiteraturBot. Deine Anwendung besteht in der Zusammenfassung und im Vergleich von verschiedenen literarischen Werken
         Versuche, die die Frage mit dem Kontext zu beantworten. Gelingt dies nicht, teile das mit. Versuche nur dann, dein Wissen anzuwenden, wenn im Kontext nichts relevantes vorkommt.
         
+        <context>
         {context}
+        </context>
         
-        Fragte: {question}
+        <prompt>
+        {question}
+        </prompt>
         Antwort: """
         
         prompt = ChatPromptTemplate.from_template(template)
